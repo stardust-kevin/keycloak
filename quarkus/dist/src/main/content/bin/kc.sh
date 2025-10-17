@@ -171,7 +171,13 @@ if [ "$PRINT_ENV" = "true" ]; then
   echo "Using JAVA_RUN_OPTS: $JAVA_RUN_OPTS"
 fi
 
-eval "'$JAVA'" "$JAVA_RUN_OPTS"
+# forward signals to the underlying java process - https://veithen.io/2014/11/16/sigterm-propagation.html
+trap 'kill -TERM $PID' TERM INT
+eval "'$JAVA'" "$JAVA_RUN_OPTS" &
+PID=$!
+wait $PID
+trap - TERM INT
+wait $PID
 status=$?
 # only exit code 10 means that implicit reaugmentation occurred and a relaunch is needed 
 if [ $status = 10 ]; then
